@@ -1,0 +1,229 @@
+\documentclass[12pt,a4paper]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{setspace}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{hyperref}
+
+\setstretch{1.15}
+
+\lstdefinestyle{verilogstyle}{
+    language=Verilog,
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{blue},
+    commentstyle=\color{gray},
+    numbers=left,
+    numberstyle=\tiny,
+    breaklines=true,
+    frame=single,
+    tabsize=4
+}
+
+\title{\textbf{Mini-Project Report: Modified SAP-1 CPU Implemented in Verilog HDL}}
+\author{Computer Architecture Mini-Project}
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+This report presents the design and simulation of a modified SAP-1 style central processing unit implemented in Verilog HDL. The processor uses an 8-bit data width, 4-bit memory addressing, a 16-location RAM, a 4-bit opcode and 4-bit operand instruction format, and a finite state machine based control unit. The instruction set supports data loading, addition, subtraction, multiplication, division, output, and halt operations. A key design requirement is that multiplication and division are implemented without using the Verilog multiplication or division operators. Simulation results verify the correct behavior of the datapath, control unit, arithmetic logic unit, and edge cases such as arithmetic overflow and division by zero.
+\end{abstract}
+
+\section{System Architecture and Datapath Design}
+
+The modified SAP-1 CPU follows a simple multi-cycle architecture. Each instruction is executed through a sequence of fetch, decode, and execute states. The processor uses a shared 8-bit internal data bus implemented using a multiplexer rather than internal tri-state logic. This design is more suitable for FPGA synthesis because most FPGA fabrics do not support internal tri-state buses directly.
+
+The main datapath components are the Program Counter (PC), Memory Address Register (MAR), 16x8 RAM, Instruction Register (IR), Accumulator A Register, B Register, Arithmetic Logic Unit (ALU), Output Register, Bus Multiplexer, and Control Unit. The PC provides the address of the next instruction. The MAR stores the memory address used to access RAM. RAM stores both program instructions and data. The IR stores the current instruction and separates it into opcode and operand fields. The accumulator stores the main operand and result for arithmetic operations. The B register stores the second operand before ALU execution. The ALU performs arithmetic operations, and the Output Register stores the final result of an OUT instruction.
+
+The internal bus can carry data from the PC, RAM, IR operand field, Accumulator, or ALU result. The Control Unit selects the active bus source and generates load signals for the registers.
+
+\section{Module Descriptions}
+
+\subsection{Program Counter}
+
+The Program Counter is a 4-bit register that stores the address of the next instruction to be fetched from RAM. During the fetch cycle, the PC value is placed on the internal bus and loaded into the MAR. After the instruction is fetched, the PC increments by one so that it points to the next instruction. The PC also supports reset and load inputs, although normal program execution mainly uses the increment operation.
+
+\subsection{Memory Address Register}
+
+The Memory Address Register stores the 4-bit address used to access RAM. During instruction fetch, the MAR receives the address from the PC. During instruction execution, the MAR receives the operand field from the Instruction Register. This allows the same RAM to be used for both instructions and data.
+
+\subsection{RAM}
+
+The RAM module is a 16-location by 8-bit memory. It is addressed using a 4-bit address input, allowing memory locations from \texttt{0x0} to \texttt{0xF}. Each memory location stores 8 bits. Instructions and data are stored in the same memory space. For simulation and program loading, the RAM includes a separate programming interface consisting of \texttt{prog\_we}, \texttt{prog\_addr}, and \texttt{prog\_data}. This allows the testbench to load instructions and data before the CPU begins execution.
+
+\subsection{Instruction Register}
+
+The Instruction Register stores the current 8-bit instruction fetched from RAM. The upper 4 bits represent the opcode, while the lower 4 bits represent the operand or memory address. For example, the instruction \texttt{8'h18} is interpreted as opcode \texttt{1}, which corresponds to LDA, and operand \texttt{8}, which refers to RAM address \texttt{0x8}.
+
+\subsection{Accumulator}
+
+The Accumulator, also called the A Register, is the main working register of the CPU. It stores the result of the LDA instruction and also holds the first operand and result for arithmetic operations. For example, after an ADD instruction, the result of \texttt{A + B} is written back into the accumulator.
+
+\subsection{B Register}
+
+The B Register stores the second operand for ALU operations. For arithmetic instructions such as ADD, SUB, MUL, and DIV, the CPU first loads the data from RAM into the B Register. The ALU then uses the Accumulator and B Register as its two inputs.
+
+\subsection{Arithmetic Logic Unit}
+
+The ALU performs arithmetic operations based on the opcode. It supports addition, subtraction, multiplication, and division. ADD and SUB use normal binary arithmetic. MUL is implemented using a shift-and-add method instead of the Verilog \texttt{*} operator. DIV is implemented using a restoring division method based on shift and subtract operations instead of the Verilog \texttt{/} operator. If division by zero occurs, the ALU outputs \texttt{8'hFF} and asserts the \texttt{div\_zero} flag.
+
+\subsection{Output Register}
+
+The Output Register stores the value that is produced by the OUT instruction. When OUT is executed, the accumulator value is placed on the bus and loaded into the Output Register. This register represents the external output of the CPU.
+
+\subsection{Control Unit}
+
+The Control Unit is implemented as a finite state machine. It controls the sequence of CPU operations by generating bus selection signals and register load signals. The Control Unit determines whether the CPU is fetching an instruction, decoding an opcode, reading data from memory, executing an ALU operation, writing to the output register, or halting.
+
+\subsection{Bus Multiplexer}
+
+The Bus Multiplexer implements the shared internal 8-bit data bus. It selects one source at a time based on the \texttt{bus\_sel} control signal. Possible sources include the PC, RAM data output, IR operand, Accumulator output, ALU result, and zero. The PC and IR operand are 4-bit values, so they are extended to 8 bits by placing four zeros in the upper bits.
+
+\section{Instruction Set and Opcode Format}
+
+The processor uses an 8-bit instruction format. The upper 4 bits contain the opcode, and the lower 4 bits contain the operand.
+
+\[
+\text{Instruction} = \{\text{opcode}[3:0], \text{operand}[3:0]\}
+\]
+
+\begin{table}[h]
+\centering
+\begin{tabular}{>{\ttfamily}c l l}
+\toprule
+Opcode & Instruction & Description \\
+\midrule
+1 & LDA addr & Load RAM[addr] into Accumulator \\
+2 & ADD addr & Add RAM[addr] to Accumulator \\
+3 & SUB addr & Subtract RAM[addr] from Accumulator \\
+4 & MUL addr & Multiply Accumulator by RAM[addr] \\
+5 & DIV addr & Divide Accumulator by RAM[addr] \\
+E & OUT & Copy Accumulator to Output Register \\
+F & HLT & Halt CPU execution \\
+0 & NOP & Reserved as no operation \\
+\bottomrule
+\end{tabular}
+\caption{Instruction set of the modified SAP-1 CPU}
+\end{table}
+
+For example, the instruction \texttt{8'h4B} consists of opcode \texttt{4} and operand \texttt{B}. This represents \texttt{MUL B}, meaning that the Accumulator is multiplied by the value stored in RAM address \texttt{0xB}.
+
+\section{ALU Design}
+
+\subsection{Addition}
+
+The ADD instruction computes:
+\[
+A \leftarrow A + B
+\]
+where \texttt{A} is the Accumulator and \texttt{B} is the value loaded from RAM. Since the datapath is 8 bits wide, overflow wraps around naturally.
+
+\subsection{Subtraction}
+
+The SUB instruction computes:
+\[
+A \leftarrow A - B
+\]
+The result is stored as an 8-bit unsigned value. If underflow occurs, the result wraps around according to two's complement binary arithmetic.
+
+\subsection{Multiplication Without \texttt{*}}
+
+Multiplication is implemented using a shift-and-add algorithm. The multiplier bits are checked one at a time. If a multiplier bit is 1, the shifted multiplicand is added to the product. The result is truncated to the lower 8 bits to match the datapath width.
+
+\[
+\text{product} = \sum_{i=0}^{7} b_i \cdot (A \ll i)
+\]
+
+This method avoids the Verilog \texttt{*} operator while still producing a synthesizable combinational multiplication circuit.
+
+\subsection{Division Without \texttt{/}}
+
+Division is implemented using restoring division, which is based on repeated shift and subtract operations. The algorithm builds the quotient one bit at a time. At each step, the partial remainder is shifted left and compared with the divisor. If the partial remainder is greater than or equal to the divisor, the divisor is subtracted and the corresponding quotient bit is set to 1.
+
+This approach avoids the Verilog \texttt{/} operator and is suitable for demonstrating the arithmetic process at the hardware level.
+
+\subsection{Division by Zero}
+
+If the divisor is zero, the ALU produces a defined result instead of an undefined value. The output result is set to:
+\[
+\texttt{8'hFF}
+\]
+and the \texttt{div\_zero} flag is asserted. This makes the behavior clear and testable during simulation.
+
+\section{Control Unit FSM}
+
+The Control Unit is a finite state machine that sequences each instruction through fetch, decode, and execute phases.
+
+\subsection{Fetch}
+
+The fetch phase has two states. In \texttt{FETCH\_ADDR}, the PC is placed on the bus and loaded into the MAR. In \texttt{FETCH\_INST}, RAM outputs the instruction at the MAR address, the instruction is loaded into the IR, and the PC is incremented.
+
+\subsection{Decode}
+
+During the decode phase, the Control Unit reads the opcode from the IR. If the opcode is HLT, the CPU enters the halt state. If the opcode is OUT, it proceeds directly to the output state. If the opcode is LDA, ADD, SUB, MUL, or DIV, it proceeds to load the operand address into the MAR.
+
+\subsection{Execute}
+
+The execute phase depends on the instruction. For LDA, RAM data is loaded into the Accumulator. For ADD, SUB, MUL, and DIV, RAM data is first loaded into the B Register, then the ALU result is written back to the Accumulator. For OUT, the Accumulator value is copied to the Output Register. For HLT, the CPU remains in the halt state and asserts the \texttt{halted} signal.
+
+\section{Simulation Result Explanation}
+
+The testbench loads a program into RAM using the programming interface. The main program performs the following sequence:
+
+\begin{lstlisting}[style=verilogstyle]
+LDA 8
+ADD 9
+SUB A
+MUL B
+DIV C
+OUT
+HLT
+\end{lstlisting}
+
+The data values are:
+
+\begin{center}
+\begin{tabular}{c c}
+\toprule
+RAM Address & Value \\
+\midrule
+\texttt{0x8} & 10 \\
+\texttt{0x9} & 3 \\
+\texttt{0xA} & 4 \\
+\texttt{0xB} & 2 \\
+\texttt{0xC} & 3 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The expected result is:
+\[
+((10 + 3 - 4) \times 2) / 3 = 6
+\]
+
+The simulation confirms that the output register contains \texttt{6}, the CPU halts correctly, and the division-by-zero flag remains low during normal execution.
+
+Additional test cases verify important edge conditions. Division by zero produces \texttt{8'hFF} and asserts \texttt{div\_zero}. Multiplication overflow wraps to the lower 8 bits. Addition overflow and subtraction underflow also wrap according to 8-bit arithmetic. Division with a remainder truncates toward zero. The testbench also verifies that LDA overwrites the previous accumulator value and that HLT prevents later instructions from executing.
+
+\section{Design Decisions and Challenges}
+
+One major design decision was to use a multiplexer-based shared bus instead of internal tri-state buffers. Although traditional SAP-1 diagrams often show a shared bus controlled by tri-state outputs, FPGA implementations are better suited to multiplexers. This improves synthesizability and avoids potential problems with unsupported internal tri-state logic.
+
+Another important design choice was to separate the CPU into small modules. This makes the system easier to understand, test, and explain. Registers, memory, ALU, control unit, and bus selection logic are implemented as separate Verilog files.
+
+The main challenge was implementing multiplication and division without using the Verilog \texttt{*} and \texttt{/} operators. Multiplication was handled using shift-and-add logic. Division was handled using restoring division, which uses shift and subtract operations to form the quotient. Division by zero was also explicitly handled to avoid undefined behavior.
+
+The Control Unit was another key challenge because each instruction requires multiple clock cycles. The FSM must correctly sequence memory reads, register loads, ALU execution, output writes, and halt behavior.
+
+\section{Conclusion}
+
+The modified SAP-1 CPU was successfully implemented in Verilog HDL using a modular design. The processor includes all required components: Program Counter, MAR, RAM, Instruction Register, Accumulator, B Register, ALU, Output Register, Control Unit, and bus multiplexer. The instruction set supports LDA, ADD, SUB, MUL, DIV, OUT, and HLT. Multiplication and division were implemented without using the Verilog multiplication or division operators. Simulation results show that the CPU executes the test program correctly and handles important edge cases such as overflow, underflow, integer division truncation, halt behavior, and division by zero.
+
+Overall, this project demonstrates the fundamental operation of a simple CPU, including instruction fetch, decode, execution, datapath control, and arithmetic processing at the register-transfer level.
+
+\end{document}

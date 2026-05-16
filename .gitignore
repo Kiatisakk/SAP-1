@@ -1,0 +1,20 @@
+# Vivado generated files and local build artifacts
+*.jou
+*.log
+*.str
+*.wdb
+*.wcfg
+*.backup.jou
+*.backup.log
+
+SAP-1.cache/
+SAP-1.hw/
+SAP-1.ip_user_files/
+SAP-1.sim/
+SAP-1.runs/
+
+# Editor and OS files
+.vscode/
+.idea/
+Thumbs.db
+Desktop.ini
