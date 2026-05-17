@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wave_config>
+   <wave_state>
+   </wave_state>
+   <db_ref_list>
+      <db_ref path="sap1_tb_behav.wdb" id="1">
+         <top_modules>
+            <top_module name="glbl" />
+            <top_module name="sap1_tb" />
+         </top_modules>
+      </db_ref>
+   </db_ref_list>
+   <zoom_setting>
+      <ZoomStartTime time="56000000fs"></ZoomStartTime>
+      <ZoomEndTime time="130000000fs"></ZoomEndTime>
+      <Cursor1Time time="121000000fs"></Cursor1Time>
+   </zoom_setting>
+   <WVObjectSize size="13" />
+   <wvobject db_ref_id="1" fp_name="/sap1_tb/clk" type="logic">
+      <obj_property name="ElementShortName">clk</obj_property>
+      <obj_property name="ObjectShortName">clk</obj_property>
+   </wvobject>
+   <wvobject db_ref_id="1" fp_name="/sap1_tb/reset" type="logic">
+      <obj_property name="ElementShortName">reset</obj_property>
+      <obj_property name="ObjectShortName">reset</obj_property>
+   </wvobject>
+   <wvobject db_ref_id="1" fp_name="/sap1_tb/out" type="array">
+      <obj_property name="ElementShortName">out[7:0]</obj_property>
+      <obj_property name="ObjectShortName">out[7:0]</obj_property>
+   </wvobject>
+   <wvobject db_ref_id="1" fp_name="/sap1_tb/halted" type="logic">
+      <obj_property name="ElementShortName">halted</obj_property>
+      <obj_property name="ObjectShortName">halted</obj_property>
+   </wvobject>
+   <wvobject db_ref_id="1" fp_name="/sap1_tb/div_zero" type="logic">
+      <obj_property name="ElementShortName">div_zero</obj_property>
+      <obj_property name="ObjectShortName">div_zero</obj_property>
+   </wvobject>
+   <wvobject db_ref_id="1" fp_name="/sap1_tb/cpu_state" type="array">
+      <obj_property name="ElementShortName">cpu_state[3:0]</obj_property>
+      <obj_property name="ObjectShortName">cpu_state[3:0]</obj_property>
+   </wvobject>
+   <wvobject db_ref_id="1" fp_name="/sap1_tb/cpu_pc" type="array">
+      <obj_property name="ElementShortName">cpu_pc[3:0]</obj_property>
+      <obj_property name="ObjectShortName">cpu_pc[3:0]</obj_property>
+   </wvobject>
+   <wvobject db_ref_id="1" fp_name="/sap1_tb/cpu_mar" type="array">
+      <obj_property name="ElementShortName">cpu_mar[3:0]</obj_property>
+      <obj_property name="ObjectShortName">cpu_mar[3:0]</obj_property>
+   </wvobject>
+   <wvobject db_ref_id="1" fp_name="/sap1_tb/cpu_instruction" type="array">
+      <obj_property name="ElementShortName">cpu_instruction[7:0]</obj_property>
+      <obj_property name="ObjectShortName">cpu_instruction[7:0]</obj_property>
+   </wvobject>
+   <wvobject db_ref_id="1" fp_name="/sap1_tb/cpu_a" type="array">
+      <obj_property name="ElementShortName">cpu_a[7:0]</obj_property>
+      <obj_property name="ObjectShortName">cpu_a[7:0]</obj_property>
+   </wvobject>
+   <wvobject db_ref_id="1" fp_name="/sap1_tb/cpu_b" type="array">
+      <obj_property name="ElementShortName">cpu_b[7:0]</obj_property>
+      <obj_property name="ObjectShortName">cpu_b[7:0]</obj_property>
+   </wvobject>
+   <wvobject db_ref_id="1" fp_name="/sap1_tb/cpu_alu_result" type="array">
+      <obj_property name="ElementShortName">cpu_alu_result[7:0]</obj_property>
+      <obj_property name="ObjectShortName">cpu_alu_result[7:0]</obj_property>
+   </wvobject>
+   <wvobject db_ref_id="1" fp_name="/sap1_tb/cpu_bus" type="array">
+      <obj_property name="ElementShortName">cpu_bus[7:0]</obj_property>
+      <obj_property name="ObjectShortName">cpu_bus[7:0]</obj_property>
+   </wvobject>
+</wave_config>

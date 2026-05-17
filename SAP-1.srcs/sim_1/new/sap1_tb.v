@@ -12,11 +12,22 @@ module sap1_tb;
     wire halted;
     wire div_zero;
 
-    reg [7:0] alu_a;
-    reg [7:0] alu_b;
-    reg [3:0] alu_opcode;
-    wire [7:0] alu_result;
-    wire alu_div_zero;
+    // Waveform monitor signals for the ALU and datapath inside the CPU.
+    // These are not extra hardware; they only make internal DUT signals easier
+    // to view in simulation.
+    wire [3:0] cpu_pc;
+    wire [3:0] cpu_mar;
+    wire [7:0] cpu_instruction;
+    wire [3:0] cpu_opcode;
+    wire [3:0] cpu_operand;
+    wire [7:0] cpu_a;
+    wire [7:0] cpu_b;
+    wire [7:0] cpu_bus;
+    wire [2:0] cpu_bus_sel;
+    wire [3:0] cpu_alu_op;
+    wire [7:0] cpu_alu_result;
+    wire cpu_alu_div_zero;
+    wire [3:0] cpu_state;
 
     integer errors;
     integer cycles;
@@ -32,13 +43,19 @@ module sap1_tb;
         .div_zero(div_zero)
     );
 
-    alu div_zero_alu_check(
-        .a(alu_a),
-        .b(alu_b),
-        .opcode(alu_opcode),
-        .result(alu_result),
-        .div_zero(alu_div_zero)
-    );
+    assign cpu_pc = dut.pc;
+    assign cpu_mar = dut.mar_address;
+    assign cpu_instruction = dut.instruction;
+    assign cpu_opcode = dut.opcode;
+    assign cpu_operand = dut.operand;
+    assign cpu_a = dut.a_data;
+    assign cpu_b = dut.b_data;
+    assign cpu_bus = dut.bus_data;
+    assign cpu_bus_sel = dut.bus_sel;
+    assign cpu_alu_op = dut.alu_op;
+    assign cpu_alu_result = dut.alu_result;
+    assign cpu_alu_div_zero = dut.alu_div_zero;
+    assign cpu_state = dut.u_control_unit.state;
 
     always #1 clk = ~clk;
 
@@ -116,9 +133,6 @@ module sap1_tb;
         prog_we = 1'b0;
         prog_addr = 4'h0;
         prog_data = 8'h00;
-        alu_a = 8'h00;
-        alu_b = 8'h00;
-        alu_opcode = 4'h0;
         errors = 0;
 
         begin_program_load("normal LDA ADD SUB MUL DIV");
@@ -208,19 +222,6 @@ module sap1_tb;
             errors = errors + 1;
         end else begin
             $display("PASS: HLT holds CPU stopped and OUT remains 5.");
-        end
-
-        alu_a = 8'd25;
-        alu_b = 8'd0;
-        alu_opcode = 4'h5;
-        #1;
-
-        if (alu_result !== 8'hFF || alu_div_zero !== 1'b1) begin
-            $display("FAIL: DIV by zero expected result FF and flag 1, got result %02h flag %b.",
-                     alu_result, alu_div_zero);
-            errors = errors + 1;
-        end else begin
-            $display("PASS: ALU divide-by-zero behavior is correct.");
         end
 
         if (errors == 0)
